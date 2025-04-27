@@ -1,0 +1,54 @@
+baseURL: "/yadnyesh-blog"
+languageCode: en-us
+title: yadnyesh's blog
+theme: PaperMod
+enableInlineShortcodes: true
+
+
+
+params:
+  ShowReadingTime: true
+  ShowToc: true
+  TocOpen: true
+  math: true  
+  ShowBreadCrumbs: true
+  homeInfoParams:
+    Title: Hi There 👋🏻
+    Content: I'm Yadnyesh, a student researcher. My research interests include reinforcement learning, reasoning and planning in robotics, flow and diffusion models, discovery-driven AI systems and foundational large language models. I am particularly focused on building interpretable, efficient, and scalable AI systems that drive scientific discovery and create real-world impact.
+  
+  socialIcons:
+    - name: x
+      url: "https://x.com/novasarc01"
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+
+
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON
+
+
+
+menu:
+  main:
+    - identifier: tags
+      name: Tags
+      url: /tags/
+      weight: 10
+    - identifier: archives
+      name: Archives
+      url: /archives/
+      weight: 20
+    - identifier: readinglist
+      name: Reading List
+      url: /readinglist/
+      weight: 30
+    - identifier: search
+      name: Search
+      url: /search/
+      weight: 40
