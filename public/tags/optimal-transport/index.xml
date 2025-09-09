@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Optimal Transport on yadnyesh&#39;s blog</title>
+    <link>http://localhost:1313/tags/optimal-transport/</link>
+    <description>Recent content in Optimal Transport on yadnyesh&#39;s blog</description>
+    <generator>Hugo -- 0.147.0</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 08 Sep 2025 12:34:29 +0530</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/optimal-transport/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>A Geometric Analysis of Transformer Representations via Optimal Transport</title>
+      <link>http://localhost:1313/posts/opt_trans_rep/</link>
+      <pubDate>Mon, 08 Sep 2025 12:34:29 +0530</pubDate>
+      <guid>http://localhost:1313/posts/opt_trans_rep/</guid>
+      <description>&lt;p&gt;Transformer models have become the backbone of modern AI, yet their remarkable performance still comes with a critical limitation: we lack a clear understanding of how information is processed inside them. Traditional evaluation focuses on outputs, but this leaves open the deeper question of &lt;em&gt;what actually happens between layers as a model learns to reason&lt;/em&gt;. In our work, we approach this problem through a geometric lens, using Optimal Transport to measure how entire distributions of representations shift across layers. This perspective allows us to contrast trained and untrained models, revealing that training does not simply tune parameters, but organizes computation into a structured three-phase strategy: encoding, refinement, and decoding, underpinned by an information bottleneck. By making this internal structure visible, we aim to move closer to principled interpretability, where understanding a model means understanding the pathways of information it discovers through learning.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
