@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Inference on yadnyesh&#39;s blog</title>
+    <link>http://localhost:1313/tags/inference/</link>
+    <description>Recent content in Inference on yadnyesh&#39;s blog</description>
+    <generator>Hugo -- 0.147.0</generator>
+    <language>en-us</language>
+    <atom:link href="http://localhost:1313/tags/inference/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Dissecting FlashInfer - A Systems Perspective on High-Performance LLM Inference</title>
+      <link>http://localhost:1313/posts/flash_infer/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/flash_infer/</guid>
+      <description>&lt;p&gt;The next frontier of large language model optimization isn’t architectural - it’s infrastructural. We’ve squeezed what we can from model design; now, inference efficiency is dictated by how we map computation to hardware. The challenge is executing them with minimal memory movement, maximal kernel fusion and predictable latency across heterogeneous batches. Every inefficiency (redundant projection, scattered memory access, unaligned kernels) compounds at scale. The gap between theoretical FLOPs and delivered throughput is now a systems problem.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

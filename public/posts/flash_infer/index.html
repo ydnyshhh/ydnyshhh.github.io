@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Dissecting FlashInfer - A Systems Perspective on High-Performance LLM Inference | yadnyesh&#39;s blog</title>
+<meta name="keywords" content="flash-infer, inference, ml-systems, gpu">
+<meta name="description" content="The next frontier of large language model optimization isn’t architectural - it’s infrastructural. We’ve squeezed what we can from model design; now, inference efficiency is dictated by how we map computation to hardware. The challenge is executing them with minimal memory movement, maximal kernel fusion and predictable latency across heterogeneous batches. Every inefficiency (redundant projection, scattered memory access, unaligned kernels) compounds at scale. The gap between theoretical FLOPs and delivered throughput is now a systems problem.">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:1313/posts/flash_infer/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.6da9a63d25a9608bca2f7f907a030e887a7dd3c3f3918e4cc113129361414bda.css" integrity="sha256-bammPSWpYIvKL3&#43;QegMOiHp908PzkY5MwRMSk2FBS9o=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/flash_infer/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ]
+  });">
+</script>
+
+
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="yadnyesh&#39;s blog (Alt + H)">yadnyesh&#39;s blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:1313/tags/" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/archives/" title="Archives">
+                    <span>Archives</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/readinglist/" title="Reading List">
+                    <span>Reading List</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      Dissecting FlashInfer - A Systems Perspective on High-Performance LLM Inference
+    </h1>
+    <div class="post-meta"><span title='2025-10-09 00:00:00 +0530 IST'>October 9, 2025</span>&nbsp;·&nbsp;21 min
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#flashinfer-as-a-unified-kernel-interface" aria-label="FlashInfer as a Unified Kernel Interface">FlashInfer as a Unified Kernel Interface</a></li>
+                <li>
+                    <a href="#unified-kv-cache-format-and-dynamic-aware-runtime" aria-label="Unified KV-Cache Format and Dynamic-Aware Runtime">Unified KV-Cache Format and Dynamic-Aware Runtime</a></li>
+                <li>
+                    <a href="#the-unified-kv-cache-format" aria-label="The Unified KV-Cache Format">The Unified KV-Cache Format</a><ul>
+                        
+                <li>
+                    <a href="#block-sparse-row-bsr-format-for-efficient-sparse-matrix-storage" aria-label="Block Sparse Row (BSR) Format for Efficient Sparse Matrix Storage">Block Sparse Row (BSR) Format for Efficient Sparse Matrix Storage</a></li>
+                <li>
+                    <a href="#page-attention-as-a-block-sparse-matrix" aria-label="Page Attention as a Block-Sparse Matrix">Page Attention as a Block-Sparse Matrix</a></li>
+                <li>
+                    <a href="#1-logical-kv-cache-block" aria-label="1. Logical KV-Cache Block">1. Logical KV-Cache Block</a></li>
+                <li>
+                    <a href="#2-physical-kv-cache-block" aria-label="2. Physical KV-Cache Block">2. Physical KV-Cache Block</a></li>
+                <li>
+                    <a href="#3-query-tiles-and-block-layout" aria-label="3. Query Tiles and Block Layout">3. Query Tiles and Block Layout</a></li></ul>
+                </li>
+                <li>
+                    <a href="#kv-cache-storage-and-tensor-core-compatibility" aria-label="KV-Cache Storage and Tensor Core Compatibility">KV-Cache Storage and Tensor Core Compatibility</a><ul>
+                        
+                <li>
+                    <a href="#memory-hierarchy-and-execution" aria-label="Memory Hierarchy and Execution">Memory Hierarchy and Execution</a></li></ul>
+                </li>
+                <li>
+                    <a href="#divide-and-conquer-attention-over-shared-and-unique-kv-caches" aria-label="Divide and Conquer Attention over Shared and Unique KV-Caches">Divide and Conquer Attention over Shared and Unique KV-Caches</a><ul>
+                        
+                <li>
+                    <a href="#baseline-batch-decode-with-single-query-attention" aria-label="Baseline: Batch Decode with Single-Query Attention">Baseline: Batch Decode with Single-Query Attention</a></li></ul>
+                </li>
+                <li>
+                    <a href="#jit-compiler-dynamic-specialization-for-attention-variants" aria-label="JIT Compiler: Dynamic Specialization for Attention Variants">JIT Compiler: Dynamic Specialization for Attention Variants</a><ul>
+                        
+                <li>
+                    <a href="#compile-time-scheduling-and-kernel-specialization" aria-label="Compile-Time Scheduling and Kernel Specialization">Compile-Time Scheduling and Kernel Specialization</a></li>
+                <li>
+                    <a href="#integration-with-flashattention-templates" aria-label="Integration with FlashAttention Templates">Integration with FlashAttention Templates</a></li></ul>
+                </li>
+                <li>
+                    <a href="#runtime-scheduler-deterministic-load-balancing-for-variable-length-requests" aria-label="Runtime Scheduler: Deterministic Load Balancing for Variable-Length Requests">Runtime Scheduler: Deterministic Load Balancing for Variable-Length Requests</a><ul>
+                        
+                <li>
+                    <a href="#cost-model-partitioning" aria-label="Cost-Model Partitioning">Cost-Model Partitioning</a></li>
+                <li>
+                    <a href="#dispatch-and-load-balancing" aria-label="Dispatch and Load Balancing">Dispatch and Load Balancing</a></li>
+                <li>
+                    <a href="#execution-pipeline" aria-label="Execution Pipeline">Execution Pipeline</a></li>
+                <li>
+                    <a href="#deterministic-reduction" aria-label="Deterministic Reduction">Deterministic Reduction</a></li>
+                <li>
+                    <a href="#integration-with-compute-abstraction" aria-label="Integration with Compute Abstraction">Integration with Compute Abstraction</a></li></ul>
+                </li>
+                <li>
+                    <a href="#multi-head-latent-attention-mla-decoding-kernel-in-flashinfer" aria-label="Multi-Head Latent Attention (MLA) Decoding Kernel in FlashInfer">Multi-Head Latent Attention (MLA) Decoding Kernel in FlashInfer</a><ul>
+                        
+                <li>
+                    <a href="#matrix-absorption-trick-in-mla-decoding" aria-label="Matrix Absorption Trick in MLA Decoding">Matrix Absorption Trick in MLA Decoding</a></li></ul>
+                </li>
+                <li>
+                    <a href="#references" aria-label="References">References</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>The next frontier of large language model optimization isn’t architectural - it’s infrastructural. We’ve squeezed what we can from model design; now, inference efficiency is dictated by how we map computation to hardware. The challenge is executing them with minimal memory movement, maximal kernel fusion and predictable latency across heterogeneous batches. Every inefficiency (redundant projection, scattered memory access, unaligned kernels) compounds at scale. The gap between theoretical FLOPs and delivered throughput is now a systems problem.</p>
+<p><a href="https://arxiv.org/pdf/2501.01005"><strong>FlashInfer</strong></a> is a response to kernel-level fragmentation in that gap. Rather than forcing every inference framework to reimplement attention from scratch, it provides a <strong>unified kernel interface</strong> optimized for modern GPU execution patterns. Its design is unapologetically focused: efficient <strong>paged KV-cache</strong> for scattered memory layouts, <strong>multi-backend dispatch</strong> to vendor-optimized kernels when available, <strong>sparse attention patterns</strong> for long-context scenarios, and a clean API that lets frameworks control scheduling while FlashInfer handles execution.</p>
+<p>This blog dissects <strong>FlashInfer as a system</strong>: how its abstractions expose structure rather than hide it, how it redefines attention as a pipeline of specialized kernels, and how it embodies the principle that <strong>efficiency is achieved through representation</strong> - of data, of memory and of computation.</p>
+<h2 id="flashinfer-as-a-unified-kernel-interface">FlashInfer as a Unified Kernel Interface<a hidden class="anchor" aria-hidden="true" href="#flashinfer-as-a-unified-kernel-interface">#</a></h2>
+<p>FlashInfer positions itself as an intermediate layer between inference frameworks and the actual kernel implementations that execute on GPUs. Rather than each framework implementing its own attention kernels or choosing a single backend, FlashInfer provides a unified API that abstracts over multiple kernel sources. The architecture is straightforward: frameworks like vLLM, SGLang, TRT-LLM, MLC-LLM, and proprietary systems integrate with FlashInfer&rsquo;s API at the top, while FlashInfer routes those calls to appropriate kernel implementations at the bottom (whether TensorRT-LLM kernels, cuDNN kernels, or FlashInfer&rsquo;s own native implementations). This design provides frameworks with flexibility in kernel selection while maintaining a consistent interface. A framework doesn&rsquo;t need to hard-code dependencies on specific kernel libraries; instead, it expresses attention operations through FlashInfer&rsquo;s API, and the actual kernel used can vary based on hardware capabilities, model characteristics, or runtime configuration.</p>
+<p><img alt="flash_infer_api" loading="lazy" src="/images/flash_infer_api.png"></p>
+<h2 id="unified-kv-cache-format-and-dynamic-aware-runtime">Unified KV-Cache Format and Dynamic-Aware Runtime<a hidden class="anchor" aria-hidden="true" href="#unified-kv-cache-format-and-dynamic-aware-runtime">#</a></h2>
+<p>When building high-performance inference engines for large language models, one of the hardest challenges is <strong>handling dynamic workloads</strong> - workloads where sequence lengths vary across requests, attention patterns differ across models, and memory layouts shift depending on the framework you’re integrating with. FlashInfer approaches this problem by introducing two key components: a <strong>unified KV-cache format</strong> that can represent multiple caching strategies under one abstraction, and a <strong>dynamic-aware compiler and runtime</strong> that compiles and schedules attention kernels adaptively at runtime. Together, these two components form the foundation of FlashInfer’s ability to achieve high throughput without sacrificing flexibility.
+<img alt="unified_kv_cache" loading="lazy" src="/images/unified_kv_cache.png"></p>
+<h2 id="the-unified-kv-cache-format">The Unified KV-Cache Format<a hidden class="anchor" aria-hidden="true" href="#the-unified-kv-cache-format">#</a></h2>
+<p>At its core, the <a href="https://magazine.sebastianraschka.com/p/coding-the-kv-cache-in-llms">KV cache</a> is a <strong>memory structure</strong> storing the key and value tensors produced during autoregressive decoding. Each new token appends to this cache, and every subsequent token’s attention must reference the entire history. In practice, however, this seemingly simple mechanism becomes a bottleneck - both because <strong>memory grows linearly</strong> with sequence length and because <strong>access patterns</strong> vary widely across inference scenarios.</p>
+<p>The KV cache fundamentally serves as a <strong>memory buffer</strong> that retains key and value tensors generated during autoregressive token generation. As each token is produced, its corresponding K/V representations are stored, allowing subsequent tokens to compute attention over the accumulated context without redundant computation. While conceptually straightforward, this mechanism creates practical challenges: <strong>memory consumption scales linearly</strong> with context length, and <strong>how the cache is accessed</strong> differs significantly depending on the inference workload.</p>
+<p>FlashInfer addresses this through a unified KV-cache format that treats the cache as a <strong>block-sparse tensor structure</strong>. Here, each block represents a contiguous chunk of tokens within the sequence. Rather than hardcoding assumptions about the underlying storage backend (whether it&rsquo;s vLLM&rsquo;s page-based allocation, a single contiguous memory buffer, or another scheme) the unified format provides a <strong>consistent abstraction layer</strong>. Blocks are independently addressable, sparsity metadata explicitly describes which portions of the cache are active, and this structural information is exposed to the runtime for optimized kernel dispatch. The result: FlashInfer kernels can operate seamlessly across diverse caching strategies - dense layouts, paged memory, structured sparse attention patterns - without requiring backend-specific code paths.</p>
+<h3 id="block-sparse-row-bsr-format-for-efficient-sparse-matrix-storage">Block Sparse Row (BSR) Format for Efficient Sparse Matrix Storage<a hidden class="anchor" aria-hidden="true" href="#block-sparse-row-bsr-format-for-efficient-sparse-matrix-storage">#</a></h3>
+<p>Sparse matrices appear frequently in machine learning systems, from attention masks in transformers to adjacency matrices in graph neural networks. While sparsity offers opportunities for memory and compute savings, naively storing only non-zero elements can introduce significant indexing overhead. Traditional element-wise sparse formats (like CSR or COO) introduce irregular memory access and branching overhead, which GPUs handle poorly. The <strong>Block Compressed Row (BSR)</strong> format offers a more structured alternative, one that leverages <strong>block-level regularity</strong> to preserve sparsity benefits while maintaining efficient memory locality.</p>
+<p><img alt="block_sparse_matrix" loading="lazy" src="/images/block_sparse_matrix.png"></p>
+<p>At a high level, the BSR format partitions the matrix into <strong>fixed-size dense blocks</strong> of shape $(Br, Bc)$ where $Br$ is the number of rows and $Bc$​ is the number of columns in each block. Instead of storing every individual non-zero entry, BSR stores entire <strong>non-zero blocks</strong> along with their corresponding <strong>column indices</strong>. This representation is particularly suitable when the sparsity pattern exhibits <strong>structured locality</strong>, as is common in attention maps with banded or sliding-window structures.</p>
+<p>The diagram above illustrates a block-sparse matrix divided into <strong>3 block rows</strong> and <strong>6 block columns</strong>. Each non-zero region (shown in blue) corresponds to a dense block of shape $(Br,Bc)=(4, 2)$. In total, the matrix contains <strong>6 non-zero blocks</strong> spread across the three block rows. To represent a block-sparse matrix compactly, the <strong>Block Compressed Row (BSR)</strong> format relies on three key arrays: <strong><code>indptr</code></strong>, <strong><code>indices</code></strong>, and <strong><code>values</code></strong>. The <code>indptr</code> array, short for <em>index pointer</em>, specifies where each block row begins and ends within the <code>indices</code> array. For example, given <code>indptr = [0, 2, 4, 6]</code>, we know that block row 0 spans entries <code>indices[0:2]</code>, block row 1 spans <code>indices[2:4]</code>, and block row 2 spans <code>indices[4:6]</code>. This effectively partitions the <code>indices</code> array according to the number of non-zero blocks per row.</p>
+<p>The <strong><code>indices</code></strong> array stores the <strong>column indices</strong> of non-zero blocks within each block row. In this case, <code>indices = [1, 5, 2, 4, 1, 3]</code> tells us that block row 0 contains non-zero blocks in columns 1 and 5, block row 1 contains non-zero blocks in columns 2 and 4, and block row 2 contains non-zero blocks in columns 1 and 3. Together, <code>indptr</code> and <code>indices</code> provide a complete structural map of where non-zero blocks reside, without storing any actual numerical values.</p>
+<p>Finally, the <strong><code>values</code></strong> array (optional) holds the <strong>actual data</strong> for each non-zero block. Each entry in <code>values</code> corresponds to a small dense submatrix of fixed size $(Br, Bc)$, such as $(4, 2)$. The blocks are stored in the same order as specified by the <code>indices</code> array, ensuring that the position of each block can be reconstructed efficiently during computation. This separation between structure (<code>indptr</code> and <code>indices</code>) and data (<code>values</code>) makes BSR both <strong>memory-efficient</strong> and <strong>GPU-friendly</strong>.</p>
+<h3 id="page-attention-as-a-block-sparse-matrix">Page Attention as a Block-Sparse Matrix<a hidden class="anchor" aria-hidden="true" href="#page-attention-as-a-block-sparse-matrix">#</a></h3>
+<p>In large-scale inference, the <strong>KV cache</strong> holds the keys and values for all tokens generated so far. When serving <strong>batched requests</strong>, each request may have different sequence lengths, and thus different cache footprints. To support <strong>dynamic batching</strong> without wasting compute on padding, <a href="https://arxiv.org/pdf/2309.06180"><strong>paged attention</strong></a> partitions the cache into <strong>fixed-size memory pages</strong>, treating each page as a <strong>unit block</strong> for addressing and computation.</p>
+<p>This design enables FlashInfer to reinterpret the attention operation as a <strong>block-sparse matrix multiplication</strong>, where the <strong>query</strong> corresponds to one dimension (rows) and the <strong>paged KV-cache</strong> to another (columns). The sparsity arises because not every query attends to every page (only a subset of pages corresponding to that request’s context).</p>
+<p><img alt="page_attn_bsm" loading="lazy" src="/images/page_attn_bsm.png"></p>
+<h3 id="1-logical-kv-cache-block">1. Logical KV-Cache Block<a hidden class="anchor" aria-hidden="true" href="#1-logical-kv-cache-block">#</a></h3>
+<p>The top-left portion of the diagram represents the <strong>logical view</strong> of the KV cache across multiple requests. Each row corresponds to a <strong>request ID</strong>, and each column corresponds to the <strong>feature dimension</strong> (head × hidden size, $H×D$). Only some portions are filled (shaded), reflecting that different requests have different active tokens or pages.</p>
+<p>This <strong>logical layout</strong> is conceptual (it doesn’t map directly to physical memory). The challenge is to convert this irregular structure into a <strong>hardware-aligned layout</strong> suitable for GPU computation.</p>
+<h3 id="2-physical-kv-cache-block">2. Physical KV-Cache Block<a hidden class="anchor" aria-hidden="true" href="#2-physical-kv-cache-block">#</a></h3>
+<p>The top-right part shows how keys (<strong>K</strong>) and values (<strong>V</strong>) are stored <strong>physically</strong>.<br>
+Instead of continuous sequences per request, they are organized as <strong>pages</strong>: each page representing a <strong>fixed-size slice</strong> of the KV cache. This is akin to virtual memory: the runtime can map logical positions to physical pages efficiently. For example, pages may have size $Bc=1$, meaning each block column corresponds to one page of KV entries.
+These physical pages form the <strong>columns</strong> of the eventual block-sparse matrix.<br>
+Requests that share similar cache sizes or attention spans will have non-zero entries aligned in the same columns.</p>
+<h3 id="3-query-tiles-and-block-layout">3. Query Tiles and Block Layout<a hidden class="anchor" aria-hidden="true" href="#3-query-tiles-and-block-layout">#</a></h3>
+<p>The bottom portion of the diagram illustrates the <strong>core structure</strong> of the computation: a <strong>block-sparse matrix</strong> representing the attention operation. Instead of operating over a dense query–key matrix, the attention is reformulated as a <strong>tiled</strong> computation, where both queries and KV-cache entries are partitioned into fixed-size blocks.</p>
+<p>In this structure, the <strong>rows</strong> correspond to <strong>query tiles</strong>, each containing a fixed number of queries (here, the tile size is $Br=4$). This means each block row represents a group of four consecutive queries, processed together for efficiency. Similarly, the <strong>columns</strong> correspond to <strong>KV pages</strong>, each with a fixed capacity of cached keys and values, with a <strong>page size</strong> of $Bc=1$. Each block column thus represents a discrete, memory-aligned unit of the KV cache. The <strong>non-zero blocks</strong> (the shaded regions in the diagram) represent <strong>active interactions</strong> (those query tiles that actually attend to specific KV pages). Blocks that remain unshaded indicate <strong>inactive regions</strong>, meaning the corresponding queries do not attend to those pages and their computations can be safely skipped. This selective computation gives rise to a <strong>block-sparse matrix</strong> structure.</p>
+<p>Each request occupies a <strong>contiguous set of rows</strong> within this matrix, reflecting the queries associated with that specific request. For example, <strong>Request 1</strong>’s queries attend to only a few KV pages, leading to a <strong>sparse row segment</strong> with limited active blocks. In contrast, <strong>Request 3</strong> attends to more KV pages, resulting in a <strong>denser region</strong> with several active blocks. This per-request tiling ensures that different sequence lengths can coexist efficiently in the same batch.</p>
+<p>The overall <strong>sparsity pattern</strong> is determined by the <strong>sequence lengths</strong> of individual requests and the <strong>paging metadata</strong> derived from their KV-cache layouts. Since not every query–page pair is valid, the matrix naturally exhibits a <strong>structured sparsity</strong>, forming a <strong>block-sparse attention mask</strong>. The runtime computes only the <strong>active blocks</strong>, while skipping the inactive ones, significantly reducing redundant computation.</p>
+<h2 id="kv-cache-storage-and-tensor-core-compatibility">KV-Cache Storage and Tensor Core Compatibility<a hidden class="anchor" aria-hidden="true" href="#kv-cache-storage-and-tensor-core-compatibility">#</a></h2>
+<p>One of the key challenges in executing sparse attention efficiently on GPUs lies in how <strong>KV-cache data</strong> is <strong>stored and accessed</strong> during matrix multiplications. Sparse data structures often break the <strong>memory alignment</strong> and <strong>coalescing patterns</strong> that <a href="https://modal.com/gpu-glossary/device-hardware/tensor-core">Tensor Cores</a> rely on for high throughput. FlashInfer overcomes this by using a <strong>block-sparse row format</strong> that preserves <strong>contiguity in the last dimension</strong>, allowing the system to retain <strong>Tensor Core compatibility</strong> while operating on sparse rows and columns.</p>
+<p><img alt="hbm_sram" loading="lazy" src="/images/hbm_sram.png"></p>
+<p>The <strong>FlashInfer kernel</strong> executes the attention computation in <strong>two memory stages</strong>:</p>
+<p>i) <strong>Loading from <a href="https://en.wikipedia.org/wiki/High_Bandwidth_Memory">Global Memory (HBM)</a> to <a href="https://en.wikipedia.org/wiki/Static_random-access_memory">Shared Memory (SRAM)</a>:</strong><br>
+Rows are fetched from <strong>global memory</strong> in their sparse form, where each row may contain only a subset of active blocks. During this stage, FlashInfer <strong>loads only the non-zero blocks</strong>into <strong>shared memory</strong>, transforming them into a <strong>dense layout</strong> ready for tensor core consumption. Because each block’s last dimension is contiguous, memory accesses remain <strong>coalesced</strong>, minimizing bandwidth waste.</p>
+<p>ii) <strong>Compute on Tensor Cores:</strong><br>
+Once in shared memory, these dense tiles are fed directly into <strong>Tensor Cores</strong>. The kernel performs standard <strong>dense <a href="https://spatial-lang.org/gemm">GEMM</a> (matrix multiply)</strong> operations on these tiles, producing partial outputs. Importantly, since only non-zero blocks are loaded, <strong>no compute cycles are wasted</strong> on zero regions achieving both <strong>data sparsity</strong> and <strong>compute regularity</strong>.</p>
+<p>This workflow allows FlashInfer to exploit the <strong>hardware efficiency of dense tensor operations</strong>, while still reaping the <strong>memory and compute savings</strong> of sparsity.</p>
+<p>The critical condition enabling this design is that the <strong>last dimension</strong> of each sub-block remains <strong>contiguous</strong> in memory. This contiguity ensures:</p>
+<ul>
+<li><strong>Coalesced global memory loads</strong>: threads fetch consecutive elements in one transaction.</li>
+<li><strong>Aligned shared memory storage</strong>: blocks map cleanly to SRAM banks.</li>
+<li><strong>Tensor Core readiness</strong>: operands are pre-packed in the required layout.</li>
+</ul>
+<h3 id="memory-hierarchy-and-execution">Memory Hierarchy and Execution<a hidden class="anchor" aria-hidden="true" href="#memory-hierarchy-and-execution">#</a></h3>
+<p>The above diagram shows how the computation unfolds:</p>
+<ul>
+<li>From <strong>HBM (global memory)</strong>, sparse sub-blocks of $A^`$ (e.g., the KV cache) are loaded into <strong>SRAM (shared memory)</strong>.</li>
+<li>Each block, $A_{\text{sub}}$​, is multiplied with the corresponding tile $X_{\text{sub}}$​ (e.g., query fragments), producing partial outputs $Y_{\text{sub}}$​.</li>
+<li>Tensor Cores handle these multiplies efficiently as dense operations, and results are accumulated into the output buffer $Y$.</li>
+</ul>
+<p>This design allows FlashInfer to run sparse attention as a <strong>sequence of dense tile multiplications</strong>, orchestrated via <strong>runtime scheduling</strong> that maps only active tiles to GPU compute threads.</p>
+<h2 id="divide-and-conquer-attention-over-shared-and-unique-kv-caches">Divide and Conquer Attention over Shared and Unique KV-Caches<a hidden class="anchor" aria-hidden="true" href="#divide-and-conquer-attention-over-shared-and-unique-kv-caches">#</a></h2>
+<p>In large-scale LLM serving, multiple requests often share overlapping context tokens - especially when decoding from similar prompts or during batch inference in applications like retrieval-augmented generation. A naive approach processes each request independently, reloading identical key-value (KV) pairs multiple times from global memory. This wastes bandwidth and compute, especially since global memory is the slowest component in the <a href="https://modal.com/gpu-glossary/device-software/memory-hierarchy">GPU memory hierarchy</a>. FlashInfer introduces a <strong>divide-and-conquer strategy</strong> that separates <strong>shared</strong> and <strong>unique</strong> KV segments, dramatically improving memory efficiency.</p>
+<p><img alt="divide_and_conquer_attn" loading="lazy" src="/images/divide_and_conquer_attn.png"></p>
+<h3 id="baseline-batch-decode-with-single-query-attention">Baseline: Batch Decode with Single-Query Attention<a hidden class="anchor" aria-hidden="true" href="#baseline-batch-decode-with-single-query-attention">#</a></h3>
+<p>In the traditional <strong>batch decode</strong> setup, each thread block handles a single query from a different request. Every query performs attention over its own KV-cache, even if portions of those caches overlap. Access to the <strong>shared KV regions</strong> happens repeatedly across requests, with each thread block loading the same data from <strong>L2 cache or global memory</strong>. This model achieves functional correctness but incurs high <strong>memory traffic</strong> and <strong>redundant compute</strong>, since shared tokens are reloaded and recomputed multiple times.</p>
+<p>FlashInfer restructures the computation into two distinct phases:</p>
+<p>i) <strong>Shared KV Phase (Multi-Query Attention):</strong><br>
+All queries across requests that reference the <strong>same shared KV tokens</strong> are grouped and processed together. These <strong>coalesced queries</strong> perform attention jointly over the <strong>shared KV-cache</strong>, leveraging <strong>SMEM (shared memory)</strong> and <strong>registers</strong> for fast access. Since shared tokens are loaded only once, this phase maximizes <strong>data reuse</strong> and exploits <strong>high-bandwidth memory tiers</strong> (registers: ~600 TB/s, shared memory: ~19 TB/s).</p>
+<p>ii) <strong>Unique KV Phase (Single-Query Attention):</strong><br>
+Each request then independently processes its <strong>unique KV segments</strong> — tokens that are not shared with others. These segments are smaller and sparse, so they are fetched directly from <strong>L2 cache or global memory</strong>. Since unique tokens vary per request, these are handled in parallel by individual thread blocks using standard attention kernels.</p>
+<p>The results from both phases - shared attention outputs $(V_{\text{shared}}, S_{\text{shared}})$ and unique attention outputs$(V_{\text{unique}}, S_{\text{unique}})$ - are combined to form the final result:</p>
+<p>$$(V_{\text{all}}, S_{\text{all}}) = (V_{\text{shared}} + V_{\text{unique}}, ; S_{\text{shared}} + S_{\text{unique}})$$</p>
+<p>This two-phase decomposition significantly improves <strong>throughput</strong> and <strong>cache utilization</strong>.</p>
+<p>This design is deeply <strong>memory hierarchy-aware</strong>:</p>
+<ul>
+<li><strong>Registers</strong> and <strong>shared memory</strong> are used for the shared KV phase to maximize data locality and reuse.</li>
+<li><strong>L2 cache</strong> and <strong>global memory</strong> are used for unique KVs, minimizing contention and allowing concurrent memory access across requests.</li>
+</ul>
+<h2 id="jit-compiler-dynamic-specialization-for-attention-variants">JIT Compiler: Dynamic Specialization for Attention Variants<a hidden class="anchor" aria-hidden="true" href="#jit-compiler-dynamic-specialization-for-attention-variants">#</a></h2>
+<p><img alt="jit_compiler" loading="lazy" src="/images/jit_compiler.png"></p>
+<p>A defining feature of <strong>FlashInfer</strong> is its <strong>Just-In-Time (JIT) Compiler</strong>, designed to dynamically specialize attention kernels for a wide variety of <strong>attention variants</strong>, <strong>problem shapes</strong>, and <a href="https://docs.flashinfer.ai/tutorials/kv_layout.html"><strong>KV-cache layouts</strong></a>. Unlike static kernel implementations that hardcode specific operations, FlashInfer’s JIT layer exposes a <strong>programmable interface</strong> that allows users to define and fuse custom operations directly into the kernel - all while preserving <strong>CUDA/Tensor Core efficiency</strong>! The JIT Compiler operates as a <strong>meta-scheduler</strong>: at runtime, it examines the current attention configuration (variant, sequence length, sparsity, layout) and compiles an optimized kernel tailored to those parameters. This makes the system both <strong>flexible</strong> (supporting new attention mechanisms) and <strong>highly performant</strong> (avoiding general-purpose overheads).</p>
+<p>FlashInfer’s JIT system enables <strong>attention customization</strong> using a set of <strong>user-defined functors</strong> (lightweight functions that specify how queries, keys, and logits should be transformed). Inspired by <a href="https://arxiv.org/pdf/2412.05496"><strong>FlexAttention</strong></a> and <strong><a href="https://ai.meta.com/blog/gpu-inference-engine-nvidia-amd-open-source/">AITemplate</a></strong> (Meta), this design allows researchers and practitioners to inject new attention mechanisms without rewriting CUDA code. Three key function classes define the behavior:</p>
+<ul>
+<li><strong><code>QueryTransform</code> / <code>KeyTransform</code></strong> – Transform query or key embeddings before computing attention scores (e.g., rotary position encoding).</li>
+<li><strong><code>LogitsTransform</code></strong> – Modify attention logits post dot-product (e.g., adding ALIBI bias).</li>
+<li><strong><code>LogitsMask</code></strong> – Apply a mask over logits to enforce structural constraints (e.g., causal masking, sliding windows, or custom sparsity).</li>
+</ul>
+<p>This modular approach decouples the <strong>attention variant logic</strong> from the <strong>low-level CUDA execution</strong>, allowing the compiler to inline these operations into the fused kernel during JIT compilation.</p>
+<p>With the JIT interface, FlashInfer supports a broad range of attention mechanisms by dynamically composing user-defined functors. It can implement <a href="https://arxiv.org/pdf/2108.12409"><strong>ALIBI attention</strong></a> by adding relative position biases for efficient long-sequence modeling, <a href="https://arxiv.org/abs/2104.09864"><strong>RoPE attention</strong></a> by applying rotational position embeddings based on token offsets, and <strong>sliding window attention</strong> by restricting each query to attend only within a local range. It also supports <strong>sigmoid attention</strong>, introducing nonlinear transformations to the attention weights, and allows <strong>custom masks or biases</strong> for domain-specific patterns. By compiling these variants just-in-time, FlashInfer achieves the flexibility to express diverse attention types while maintaining the efficiency of highly optimized, fused kernels.</p>
+<h3 id="compile-time-scheduling-and-kernel-specialization">Compile-Time Scheduling and Kernel Specialization<a hidden class="anchor" aria-hidden="true" href="#compile-time-scheduling-and-kernel-specialization">#</a></h3>
+<p>The JIT compiler also handles <strong>compile-time scheduling</strong>, generating optimized kernels for different <strong>problem shapes</strong> and <strong>memory layouts</strong>. For instance:</p>
+<ul>
+<li><strong>Dense / Contiguous KV-cache</strong>: Standard memory layout for sequential models.</li>
+<li><strong>Sparse / Block-Sparse KV-cache</strong>: Used in paged attention or sparse memory systems.</li>
+</ul>
+<p>During compilation, the JIT layer selects <strong>tiling strategies</strong>, <strong>loop unrolling</strong>, and <strong>tensor core fragment mappings</strong> appropriate to the workload. This ensures that every kernel instance maximizes GPU occupancy and minimizes data movement, regardless of sparsity or block size. Because kernels are compiled <strong>on demand</strong>, the system avoids bloating binary size with hundreds of precompiled variants - instead, it emits only the ones needed for the active workload.</p>
+<h3 id="integration-with-flashattention-templates">Integration with FlashAttention Templates<a hidden class="anchor" aria-hidden="true" href="#integration-with-flashattention-templates">#</a></h3>
+<p>Under the hood, FlashInfer’s JIT system builds on <strong>CUDA/Cutlass templates</strong> derived from <strong>FlashAttention-2/3</strong>. These templates define the core GEMM loops, memory hierarchies, and warp scheduling policies. The JIT compiler injects user-defined transformations and masks directly into these templates before compilation, producing a <strong>fused attention kernel</strong> specialized for both the <strong>variant</strong> and <strong>cache layout</strong>.</p>
+<p>At runtime, FlashInfer’s JIT engine analyzes the current attention configuration (such as the variant, mask type, and cache format) then assembles the corresponding function graph and specializes a CUDA kernel with inline transformations. The compiled binary is cached for reuse, enabling the system to handle heterogeneous batches where each request may use a different attention type, all while sustaining extremely low launch latency in the microsecond range after the initial compilation.</p>
+<h2 id="runtime-scheduler-deterministic-load-balancing-for-variable-length-requests">Runtime Scheduler: Deterministic Load Balancing for Variable-Length Requests<a hidden class="anchor" aria-hidden="true" href="#runtime-scheduler-deterministic-load-balancing-for-variable-length-requests">#</a></h2>
+<p>In real-world LLM serving, incoming requests vary significantly in <strong>sequence length</strong> and <strong>KV-cache size</strong>. A naive scheduling strategy assigns one request per thread block, leading to <strong>load imbalance</strong>, underutilized GPU resources, and non-deterministic execution when requests differ in length. To solve this, <strong>FlashInfer</strong> introduces a <strong>cost-model-based runtime scheduler</strong> that dynamically partitions workloads into <strong>uniform tiles</strong>, distributes them evenly across thread blocks, and performs <strong>deterministic reductions</strong> to ensure correctness and reproducibility. This scheduler bridges the gap between <strong>heterogeneous input sequences</strong> and the <strong>homogeneous compute structure</strong> GPUs require for maximum throughput.</p>
+<p><img alt="runtime_scheduler" loading="lazy" src="/images/runtime_scheduler.png"></p>
+<h3 id="cost-model-partitioning">Cost-Model Partitioning<a hidden class="anchor" aria-hidden="true" href="#cost-model-partitioning">#</a></h3>
+<p>Each decoding step involves computing attention between a <strong>query tile</strong> and its corresponding <strong>key-value (KV) cache</strong>. Since requests have variable lengths, each has a different number of work units. The scheduler takes as <strong>input</strong>: a) the <strong>query length</strong> and <strong>KV length</strong> for each request and b) the <strong>query tile size</strong> (e.g., 64 or 128 tokens per tile).
+These parameters define a set of <strong>work tiles</strong>, each representing a unit of attention computation between a subset of queries and keys. The scheduler uses a <strong>cost model</strong> to partition each request’s workload into <strong>uniform tiles</strong>:</p>
+<ul>
+<li>Long sequences are divided into multiple tiles.</li>
+<li>Short sequences may fit into a single tile.</li>
+</ul>
+<p>For example:</p>
+<ul>
+<li>Request 0 → <code>work 0</code>, <code>work 1</code>, <code>work 2</code></li>
+<li>Request 1 → <code>work 3</code>, <code>work 4</code></li>
+<li>Request 2 → <code>work 5</code>, <code>work 6</code></li>
+</ul>
+<p>Each work tile corresponds to a <strong>fixed-size attention subproblem</strong>, ensuring <strong>consistent compute cost</strong> per tile. This tiling enables <strong>fine-grained scheduling</strong>, where the runtime can balance workload across all <a href="https://modal.com/gpu-glossary/device-software/cooperative-thread-array"><strong>Cooperative Thread Arrays (CTAs)</strong></a>.</p>
+<h3 id="dispatch-and-load-balancing">Dispatch and Load Balancing<a hidden class="anchor" aria-hidden="true" href="#dispatch-and-load-balancing">#</a></h3>
+<p>After partitioning, the scheduler assigns these <strong>work tiles</strong> to CTAs through a <strong>deterministic queue</strong>:</p>
+<ul>
+<li>Each CTA fetches work units in a <strong>predefined order</strong>, ensuring <strong>repeatable execution</strong>.</li>
+<li>The assignment balances the total number of tokens processed across CTAs, preventing idle compute units. For instance: <code>CTA 0</code> → <code>work 5</code> , <code>CTA 1</code> → <code>work 6</code> , <code>CTA 2</code> → <code>work 0</code>, etc.</li>
+</ul>
+<p>This results in <strong>even distribution</strong> and <strong>zero wave quantization</strong> - no idle “waves” of CTAs waiting for others to finish.</p>
+<h3 id="execution-pipeline">Execution Pipeline<a hidden class="anchor" aria-hidden="true" href="#execution-pipeline">#</a></h3>
+<p>Once dispatched, each CTA invokes the <strong>attention kernel</strong> on its assigned tile. The computation produces <strong>partial outputs</strong> - intermediate results containing the attention-weighted values and their corresponding log-sum-exp (LSE) normalization factors:
+$$(O_i&rsquo;, LSE_i&rsquo;) \text{ for each tile } i$$
+These partial outputs are then sent to a <strong>contraction kernel</strong> for aggregation.</p>
+<h3 id="deterministic-reduction">Deterministic Reduction<a hidden class="anchor" aria-hidden="true" href="#deterministic-reduction">#</a></h3>
+<p>To ensure correctness, the scheduler maintains a <strong>reduction map</strong> linking tiles back to their parent request. Example:  <code>0 ← [0]</code>, <code>1 ← [1, 2]</code>, <code>2 ← [3]</code>, <code>3 ← [4]</code>, <code>4 ← [5, 6]</code>
+This map instructs the <strong>contraction kernel</strong> to combine partial outputs belonging to the same request: $$(O_{\text{final}}, LSE_{\text{final}}) = \text{reduce}(O_i&rsquo;, LSE_i&rsquo;)$$This process is <strong>deterministic</strong>, meaning outputs are identical across runs regardless of GPU scheduling order. The contraction step fuses all partial results to produce <strong>final attention outputs</strong> for each request.</p>
+<h3 id="integration-with-compute-abstraction">Integration with Compute Abstraction<a hidden class="anchor" aria-hidden="true" href="#integration-with-compute-abstraction">#</a></h3>
+<p>This scheduling logic integrates seamlessly with FlashInfer’s <strong>compute abstraction</strong>, which follows an <strong>Init–Plan–Run</strong> model:</p>
+<ul>
+<li><strong>Init:</strong> JIT-compile specialized kernels for each problem shape and attention variant.</li>
+<li><strong>Plan:</strong> Use the runtime scheduler to partition workloads and determine the execution plan (load balancing, deterministic reduction).</li>
+<li><strong>Run:</strong> Execute kernels according to the plan using CUDA graphs or <code>torch.compile</code> for maximum throughput.</li>
+</ul>
+<p>This design amortizes compilation cost across multiple layers and decoding steps, achieving both <strong>dynamic adaptability</strong> and <strong>high efficiency</strong>.</p>
+<h2 id="multi-head-latent-attention-mla-decoding-kernel-in-flashinfer">Multi-Head Latent Attention (MLA) Decoding Kernel in FlashInfer<a hidden class="anchor" aria-hidden="true" href="#multi-head-latent-attention-mla-decoding-kernel-in-flashinfer">#</a></h2>
+<p>During my examination of FlashInfer’s kernel codebase, I found an implementation of the <a href="https://github.com/flashinfer-ai/flashinfer/pull/551"><strong>MLA (Multi-Head Latent Attention) decode kernel</strong></a> - a specialized kernel designed to efficiently execute latent attention by compressing KV caches and fusing matrix operations through the <strong>Matrix Absorption Trick</strong>. This caught my attention as it demonstrates how modern inference systems handle increasingly complex attention mechanisms at the kernel level.</p>
+<p><img alt="mla_decode" loading="lazy" src="/images/mla_decode.png"></p>
+<h3 id="matrix-absorption-trick-in-mla-decoding">Matrix Absorption Trick in MLA Decoding<a hidden class="anchor" aria-hidden="true" href="#matrix-absorption-trick-in-mla-decoding">#</a></h3>
+<p>In the standard <strong>Multi-head Latent Attention (MLA)</strong> design (as introduced in DeepSeekV2), decoding involves multiple sequential linear projections: one to map the hidden states into a low-rank query space (<code>WᴰQ</code>), another to expand queries into non-rotary and rotary subspaces (<code>WᵁQ</code>, <code>WᵠR</code>), and separate projections for compressed keys/values (<code>WᵁK</code>, <code>WᵁV</code>) before the final output projection (<code>Wᴼ</code>). Each step requires its own matrix multiplication and intermediate tensor, adding kernel overhead and memory traffic - especially problematic during <strong>token-by-token decoding</strong>.</p>
+<p>The <strong>Matrix Absorption trick</strong> optimizes this by <strong>pre-composing</strong> these linear maps <strong>offline</strong>, leveraging the associative property of matrix multiplication. Instead of computing: $Q_{\text{nope}} = H \cdot W^{DQ} \cdot W^{UQ},  K_{\text{nope}} = C \cdot W^{UK}$ and then performing: $Q_{\text{nope}} \cdot K_{\text{nope}}^{\top}$ at runtime, the trick merges weights once: $$
+W^{UQ_UK} = W^{UQ} \times W^{UK}$$
+This fused matrix directly maps the low-rank query representation into a <strong>compressed latent space</strong> aligned with the KV cache, eliminating an intermediate projection. Similarly, the value projection and output projection are fused: $$
+W^{UV_O} = W^{UV} \times W^{O}
+$$So after attention, the latent output is transformed to the final hidden dimension in <strong>one matmul</strong>. At runtime, decoding now involves:</p>
+<ol>
+<li>One projection for queries: $$
+Q = H \cdot W^{DQ}
+$$</li>
+<li>One fused projection into the compressed latent space: $$
+Q_{\text{latent}} = Q \cdot W^{UQ_UK}
+$$</li>
+<li>A single output projection using the pre-fused matrix: $$
+O = A \cdot W^{UV_O}
+$$
+where $A$ is the attention-weighted latent output.</li>
+</ol>
+<p>The <strong>MLA decode kernel workflow</strong> in FlashInfer implements an optimized version of <strong>Multi-head Latent Attention (MLA)</strong>, designed to compress and efficiently utilize the KV cache during decoding. The process begins with the input <strong>hidden states</strong> (5120-dim), which are projected into a low-rank latent space through two main paths. The first path produces the <strong>query latent representation</strong> via $W^{DQ}$, followed by normalization with RMSNorm to yield $c_t^Q$​. The second path generates a combined key-value representation through $W^{DKV} + W^{KR}$, which is then <strong>split</strong> into two components: $k_{pe}$​, representing positional encodings, and <code>compressed_kv</code>, representing the compressed content used for both keys and values.</p>
+<p>The query latent $c_t^Q$ is further decomposed into two parts: <strong>non-positional</strong> ($q_{nope}$​) and <strong>positional</strong> ($q_{pe}$​) components, computed via matrix multiplications with $W^{UQ}$ and $W^{QR}$, respectively. Similarly, the key-side positional encoding $k_{pe}$​ is fused with $q_{pe}$​ using <strong>rotary embeddings</strong>, embedding relative position information without explicit positional vectors. Both $q_{pe}$​ and $k_{pe}$​ are conceptually concatenated into higher-dimensional heads (64+512) for each of the 128 query heads. The attention computation is then carried out by FlashInfer’s <strong>128-head MQA kernel</strong>, which reuses <code>compressed_kv_normed</code> as both <strong>K</strong> and <strong>V</strong>, achieving memory efficiency and reducing redundant projections.</p>
+<p>The <strong>Matrix Absorption trick</strong> merges multiple linear layers into single composite matrices. This fusion precomputes the interactions between projection layers, effectively lowering the computational overhead during runtime. The absorbed matrices $W^{UQ_UK}$ and $W^{UV_O}$ enable decoding to operate directly in the latent space, minimizing FLOPs while maintaining accuracy. The final attention outputs are projected back to the original hidden dimension (5120) through the fused $W^{UV_O}$, completing a decoding pipeline that is both <strong>highly efficient</strong> and <strong>optimized for GPU memory access patterns</strong>.</p>
+<p>By dissecting FlashInfer’s internals we gained a <strong>systems-level understanding</strong> of how LLM inference is evolving beyond naïve implementations toward <strong>hardware-saturating</strong>, <strong>latency-minimized</strong>, and <strong>throughput-optimized</strong> architectures. In essence, understanding FlashInfer gives you the blueprint for reasoning about <strong>how and why</strong> frameworks like vLLM schedule tokens the way they do, how SGLang optimizes <strong>radix-based serving</strong>, or how TensorRT fuses <strong>custom CUDA kernels</strong> for maximum efficiency. It’s a foundational step toward <strong>engineering the future of real-time, large-scale inference.</strong></p>
+<h2 id="references">References<a hidden class="anchor" aria-hidden="true" href="#references">#</a></h2>
+<ol>
+<li><a href="https://arxiv.org/pdf/2501.01005">FlashInfer: Efficient and Customizable Attention Engine for LLM Inference Serving</a></li>
+<li><a href="https://github.com/flashinfer-ai/flashinfer">FlashInfer Repo</a> and <a href="https://docs.flashinfer.ai/">FlashInfer Docs</a></li>
+<li><a href="https://flashinfer.ai/2024/12/16/flashinfer-v02-release.html">FlashInfer 0.2 - Efficient and Customizable Kernels for LLM Inference Serving</a></li>
+<li><a href="https://www.youtube.com/watch?v=ONv8Fqx1DcM">GPU Mode Talk on FlashInfer by Zihao Ye</a></li>
+<li><a href="https://github.com/flashinfer-ai/flashinfer/pull/551">PR implementing MLA decode</a></li>
+</ol>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="http://localhost:1313/tags/flash-infer/">Flash-Infer</a></li>
+      <li><a href="http://localhost:1313/tags/inference/">Inference</a></li>
+      <li><a href="http://localhost:1313/tags/ml-systems/">Ml-Systems</a></li>
+      <li><a href="http://localhost:1313/tags/gpu/">Gpu</a></li>
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:1313/">yadnyesh&#39;s blog</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
