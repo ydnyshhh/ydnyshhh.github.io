@@ -1,7 +1,7 @@
 ---
 date: '2025-12-28T12:23:11+05:30'
 draft: false
-title: 'Beyond PPO - The New Wave of Policy Optimization for LLM Post-Training'
+title: 'Beyond PPO - The New Wave of Policy Optimization Techniques for LLM Post-Training'
 math: true
 tags: ["post-training", "RLHF", "policy optimization", "reinforcement learning"]
 ---

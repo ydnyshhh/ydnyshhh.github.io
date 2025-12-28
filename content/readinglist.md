@@ -43,3 +43,13 @@ Here's my collection of favorite readings:
 33. Surely You’re Joking Mr. Feynman - Richard Feynman
 34. The Republic - Plato
 35. The Singapore Story: Memoirs of Lee Kuan Yew - Lee Kuan Yew
+36. The Origins of Efficiency - Brian Potter
+37. What is Intelligence? - Blaise Aguera
+38. Breakneck - Dan Wang
+39. The Structure of Scientific Revolutions - Thomas Kuhn
+40. The Logic of Scientific Discovery - Karl Popper
+41. An Essay on Man - Ernst Cassirer
+42. The Melancholy of Resistance - László Krasznahorkai 
+43. Journey to the End of Reason: The life of Kurt Godel - Stephen Budiansky
+44. Letters of Vincent Van Gogh - Van Gogh
+45. Glass Bead Game - Hermann Hesse
