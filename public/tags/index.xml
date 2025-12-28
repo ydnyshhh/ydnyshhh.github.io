@@ -6,8 +6,64 @@
     <description>Recent content in Tags on yadnyesh&#39;s blog</description>
     <generator>Hugo -- 0.147.0</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 08 Sep 2025 12:34:29 +0530</lastBuildDate>
+    <lastBuildDate>Sun, 28 Dec 2025 12:23:11 +0530</lastBuildDate>
     <atom:link href="http://localhost:1313/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Policy Optimization</title>
+      <link>http://localhost:1313/tags/policy-optimization/</link>
+      <pubDate>Sun, 28 Dec 2025 12:23:11 +0530</pubDate>
+      <guid>http://localhost:1313/tags/policy-optimization/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Post-Training</title>
+      <link>http://localhost:1313/tags/post-training/</link>
+      <pubDate>Sun, 28 Dec 2025 12:23:11 +0530</pubDate>
+      <guid>http://localhost:1313/tags/post-training/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Reinforcement Learning</title>
+      <link>http://localhost:1313/tags/reinforcement-learning/</link>
+      <pubDate>Sun, 28 Dec 2025 12:23:11 +0530</pubDate>
+      <guid>http://localhost:1313/tags/reinforcement-learning/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>RLHF</title>
+      <link>http://localhost:1313/tags/rlhf/</link>
+      <pubDate>Sun, 28 Dec 2025 12:23:11 +0530</pubDate>
+      <guid>http://localhost:1313/tags/rlhf/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Flash-Infer</title>
+      <link>http://localhost:1313/tags/flash-infer/</link>
+      <pubDate>Thu, 09 Oct 2025 00:00:00 +0530</pubDate>
+      <guid>http://localhost:1313/tags/flash-infer/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Gpu</title>
+      <link>http://localhost:1313/tags/gpu/</link>
+      <pubDate>Thu, 09 Oct 2025 00:00:00 +0530</pubDate>
+      <guid>http://localhost:1313/tags/gpu/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Inference</title>
+      <link>http://localhost:1313/tags/inference/</link>
+      <pubDate>Thu, 09 Oct 2025 00:00:00 +0530</pubDate>
+      <guid>http://localhost:1313/tags/inference/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Ml-Systems</title>
+      <link>http://localhost:1313/tags/ml-systems/</link>
+      <pubDate>Thu, 09 Oct 2025 00:00:00 +0530</pubDate>
+      <guid>http://localhost:1313/tags/ml-systems/</guid>
+      <description></description>
+    </item>
     <item>
       <title>Optimal Transport</title>
       <link>http://localhost:1313/tags/optimal-transport/</link>

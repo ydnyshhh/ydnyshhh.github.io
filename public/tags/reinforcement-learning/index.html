@@ -5,11 +5,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="noindex, nofollow">
-<title>Flash-Infer | yadnyesh&#39;s blog</title>
+<title>Reinforcement Learning | yadnyesh&#39;s blog</title>
 <meta name="keywords" content="">
 <meta name="description" content="">
 <meta name="author" content="">
-<link rel="canonical" href="http://localhost:1313/tags/flash-infer/">
+<link rel="canonical" href="http://localhost:1313/tags/reinforcement-learning/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.6da9a63d25a9608bca2f7f907a030e887a7dd3c3f3918e4cc113129361414bda.css" integrity="sha256-bammPSWpYIvKL3&#43;QegMOiHp908PzkY5MwRMSk2FBS9o=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
@@ -18,8 +18,8 @@
 <link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" type="application/rss+xml" href="http://localhost:1313/tags/flash-infer/index.xml">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/tags/flash-infer/">
+<link rel="alternate" type="application/rss+xml" href="http://localhost:1313/tags/reinforcement-learning/index.xml">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/tags/reinforcement-learning/">
 <noscript>
     <style>
         #theme-toggle,
@@ -137,21 +137,21 @@
 <main class="main"> 
 <header class="page-header"><div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/tags/">Tags</a></div>
   <h1>
-    Flash-Infer
+    Reinforcement Learning
   </h1>
 </header>
 
 <article class="post-entry tag-entry"> 
   <header class="entry-header">
-    <h2 class="entry-hint-parent">Dissecting FlashInfer - A Systems Perspective on High-Performance LLM Inference
+    <h2 class="entry-hint-parent">Beyond PPO - The New Wave of Policy Optimization for LLM Post-Training
     </h2>
   </header>
   <div class="entry-content">
-    <p>The next frontier of large language model optimization isn’t architectural - it’s infrastructural. We’ve squeezed what we can from model design; now, inference efficiency is dictated by how we map computation to hardware. The challenge is executing them with minimal memory movement, maximal kernel fusion and predictable latency across heterogeneous batches. Every inefficiency (redundant projection, scattered memory access, unaligned kernels) compounds at scale. The gap between theoretical FLOPs and delivered throughput is now a systems problem.
+    <p>PPO used to be the default workhorse for RLHF because it’s reasonably stable and easy to reason about, but at LLM post-training scale its tradeoffs start to bite: the critic/value model is expensive to train and maintain, long text rollouts amplify variance and make advantage estimation brittle, clipping becomes a blunt instrument that can under-update (wasting samples) or over-update (destabilizing), and the whole loop turns into a systems-heavy exercise once “environment interaction” means generating thousands of tokens across distributed inference. As post-training shifted from short preference tuning toward reasoning-heavy objectives (RLVR, long-CoT, verifier-driven rewards, pass@k-style targets) and larger, more heterogeneous data mixtures, these weaknesses became harder to paper over with hyperparameter folklore because the optimization problem is noisier, the feedback signals are sparser, and the failure modes (reward hacking, length bias, mode collapse, over-regularization) are more punishing. That’s why the field has been moving beyond “just PPO” toward more robust, more LLM-native policy optimization: methods that reduce dependence on a critic, stabilize updates under long-horizon generation, better control distribution shift between samples and policy, and align the training objective with how we actually evaluate modern models, ultimately making post-training not just possible, but reliable under the messy realities of large-scale reasoning optimization.
 ...</p>
   </div>
-  <footer class="entry-footer"><span title='2025-10-09 00:00:00 +0530 IST'>October 9, 2025</span>&nbsp;·&nbsp;21 min</footer>
-  <a class="entry-link" aria-label="post link to Dissecting FlashInfer - A Systems Perspective on High-Performance LLM Inference" href="http://localhost:1313/posts/flash_infer/"></a>
+  <footer class="entry-footer"><span title='2025-12-28 12:23:11 +0530 IST'>December 28, 2025</span>&nbsp;·&nbsp;2 min</footer>
+  <a class="entry-link" aria-label="post link to Beyond PPO - The New Wave of Policy Optimization for LLM Post-Training" href="http://localhost:1313/posts/policy_optimization/"></a>
 </article>
     </main>
     

@@ -2,19 +2,49 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>http://localhost:1313/posts/policy_optimization/</loc>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/policy-optimization/</loc>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/post-training/</loc>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
+  </url><url>
     <loc>http://localhost:1313/posts/</loc>
-    <lastmod>2025-10-09T20:55:00+05:30</lastmod>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/reinforcement-learning/</loc>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/rlhf/</loc>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/</loc>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
   </url><url>
     <loc>http://localhost:1313/</loc>
-    <lastmod>2025-10-09T20:55:00+05:30</lastmod>
+    <lastmod>2025-12-28T12:23:11+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/posts/flash_infer/</loc>
+    <lastmod>2025-10-09T00:00:00+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/flash-infer/</loc>
+    <lastmod>2025-10-09T00:00:00+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/gpu/</loc>
+    <lastmod>2025-10-09T00:00:00+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/inference/</loc>
+    <lastmod>2025-10-09T00:00:00+05:30</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/ml-systems/</loc>
+    <lastmod>2025-10-09T00:00:00+05:30</lastmod>
   </url><url>
     <loc>http://localhost:1313/posts/opt_trans_rep/</loc>
     <lastmod>2025-09-08T12:34:29+05:30</lastmod>
   </url><url>
     <loc>http://localhost:1313/tags/optimal-transport/</loc>
-    <lastmod>2025-09-08T12:34:29+05:30</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/tags/</loc>
     <lastmod>2025-09-08T12:34:29+05:30</lastmod>
   </url><url>
     <loc>http://localhost:1313/tags/transformers/</loc>
