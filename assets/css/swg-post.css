@@ -9,3 +9,4 @@
 .post-content .swg-table-wrap code { font-size: 0.9em; }
 .swg-table-wrap:not(:has(th:nth-child(4))) { width: 100%; left: 0; transform: none; }
 .post-content .swg-table-wrap:not(:has(th:nth-child(4))) table { min-width: 650px; }
+.post-content :is(h2, h3, h4, h5, h6) { font-size: 24px; line-height: 1.4; margin: 28px 0 16px; }
