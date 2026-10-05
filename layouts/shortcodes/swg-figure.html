@@ -3,9 +3,4 @@
 {{- $small := .Page.Resources.GetMatch (printf "%s-640.webp" (path.BaseName (.Get "src"))) -}}
 {{- $medium := .Page.Resources.GetMatch (printf "%s-1120.webp" (path.BaseName (.Get "src"))) -}}
 {{- $large := .Page.Resources.GetMatch (printf "%s-2240.webp" (path.BaseName (.Get "src"))) -}}
-<figure class="swg-figure">
-  <a href="{{ $image.RelPermalink }}" aria-label="View full-size image: {{ .Get "caption" }}">
-    <img src="{{ $medium.RelPermalink }}" srcset="{{ $small.RelPermalink }} {{ $small.Width }}w, {{ $medium.RelPermalink }} {{ $medium.Width }}w, {{ $large.RelPermalink }} {{ $large.Width }}w" sizes="(max-width: 1168px) calc(100vw - 48px), 1120px" width="{{ $medium.Width }}" height="{{ $medium.Height }}" loading="lazy" decoding="async" alt="{{ .Get "caption" }}">
-  </a>
-  <figcaption>{{ .Get "caption" }} <a href="{{ $image.RelPermalink }}">View full size</a></figcaption>
-</figure>
+<p><img class="swg-image" src="{{ $medium.RelPermalink }}" srcset="{{ $small.RelPermalink }} {{ $small.Width }}w, {{ $medium.RelPermalink }} {{ $medium.Width }}w, {{ $large.RelPermalink }} {{ $large.Width }}w" sizes="(max-width: 768px) calc(100vw - 48px), 720px" width="{{ $medium.Width }}" height="{{ $medium.Height }}" loading="lazy" decoding="async" alt="{{ .Get "caption" }}"></p>

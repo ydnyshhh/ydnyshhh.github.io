@@ -92,7 +92,7 @@ The aggregate score is informative but when we dig into families SWG’s true ut
 {{< swg-table label="Qwen family comparison" >}}
 
 | Family                | Qwen/Qwen3.5-4B | Qwen/Qwen3-235B-A22B-Thinking-2507 |
-| --------------------- | --------------- | ---------------------------------- |
+| :--- | ---: | ---: |
 | `pipeline`            | 0.819           | 0.658                              |
 | `retrieval_workspace` | 0.772           | 0.699                              |
 | `script_repair`       | 0.704           | 0.683                              |
@@ -105,7 +105,7 @@ Tasks in the pipeline family reward coordinating many files and processes: the c
 {{< swg-table label="Overall model results" >}}
 
 | Model                 | Mean Reward | Perfect Rate | No-Submit | Time / Task | Tokens / Task | Main Takeaway                                                       |
-| --------------------- | ----------- | ------------ | --------- | ----------- | ------------- | ------------------------------------------------------------------- |
+| :--- | ---: | ---: | ---: | ---: | ---: | :--- |
 | `GPT-5.5`             | **0.919**   | 0.777        | 0.000     | 29.6s       | 1,063         | Best overall full-run result; very strong across families.          |
 | `GPT-5.5` repeat      | 0.918       | 0.769        | 0.000     | 25.2s       | 829           | Confirms the GPT-5.5 result is stable.                              |
 | `GLM-5.2`             | **0.917**   | 0.779        | 0.000     | 45.9s       | 1,098         | Nearly tied with GPT-5.5; strongest on pipeline.                    |
@@ -131,7 +131,7 @@ The reason why GLM could be very good on pipeline tasks, why Kimi appears to be 
 {{< swg-table label="Results by model and environment family" >}}
 
 | Model                       | Tabular   | Script Repair | Pipeline  | Retrieval Workspace | Main Pattern                                                             |
-| --------------------------- | --------- | ------------- | --------- | ------------------- | ------------------------------------------------------------------------ |
+| :--- | ---: | ---: | ---: | ---: | :--- |
 | `openai/gpt-5.5`            | **0.987** | **0.944**     | 0.852     | **0.885**           | Strongest broad performer; especially good on tabular and script repair. |
 | `z-ai/glm-5.2`              | 0.867     | 0.929         | **0.987** | 0.880               | Extremely strong on pipeline; broad high performance elsewhere.          |
 | `moonshotai/kimi-k2.7-code` | 0.867     | 0.931         | 0.930     | 0.878               | Very balanced coding/workspace model; no obvious collapse family.        |
