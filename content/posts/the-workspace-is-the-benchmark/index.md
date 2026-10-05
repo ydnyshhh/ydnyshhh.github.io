@@ -218,14 +218,14 @@ I'd like to thank the Prime Intellect team for providing compute and research in
 
 Please cite this work as:
 
-> Yadnyesh. "The Workspace Is the Benchmark: Building synthetic environments to understand how agents actually fail." *yadnyesh's blog* (October 2026). [https://ydnyshhh.github.io/posts/the-workspace-is-the-benchmark/](https://ydnyshhh.github.io/posts/the-workspace-is-the-benchmark/)
+> Yadnyesh Chakane. "The Workspace Is the Benchmark: Building synthetic environments to understand how agents actually fail." *yadnyesh's blog* (October 2026). [https://ydnyshhh.github.io/posts/the-workspace-is-the-benchmark/](https://ydnyshhh.github.io/posts/the-workspace-is-the-benchmark/)
 
 Or use the BibTeX citation:
 
 ```bibtex
 @article{yadnyesh2026workspace,
   title   = {The Workspace Is the Benchmark: Building synthetic environments to understand how agents actually fail},
-  author  = {Yadnyesh},
+  author  = {Yadnyesh Chakane},
   journal = {ydnyshhh.github.io},
   year    = {2026},
   month   = oct,
