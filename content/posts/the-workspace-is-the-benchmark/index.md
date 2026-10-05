@@ -9,6 +9,7 @@ swg: true
 math: false
 ShowToc: true
 TocOpen: false
+ShowCodeCopyButtons: true
 summary: "Synthetic Workspace Gym turns agent evaluation into reproducible, executable workspaces. Architecture, cross-model results, behavioral traces, and counterfactual experiments reveal how agents succeed and fail."
 ---
 
@@ -212,3 +213,22 @@ Though the average performance of these models was statistically equivalent, thi
 ## Acknowledgements
 
 I'd like to thank the Prime Intellect team for providing compute and research infrastructure to facilitate this work. I'm also grateful to [Sebastian Muller](https://x.com/omouamoua) for his mentorship, research guidance and suggestions at various stages of my residency. His suggestions contributed to both the work itself and my approach to the experiments and their evaluation.
+
+## Citation
+
+Please cite this work as:
+
+> Yadnyesh. "The Workspace Is the Benchmark: Building synthetic environments to understand how agents actually fail." *yadnyesh's blog* (October 2026). [https://ydnyshhh.github.io/posts/the-workspace-is-the-benchmark/](https://ydnyshhh.github.io/posts/the-workspace-is-the-benchmark/)
+
+Or use the BibTeX citation:
+
+```bibtex
+@article{yadnyesh2026workspace,
+  title   = {The Workspace Is the Benchmark: Building synthetic environments to understand how agents actually fail},
+  author  = {Yadnyesh},
+  journal = {ydnyshhh.github.io},
+  year    = {2026},
+  month   = oct,
+  url     = {https://ydnyshhh.github.io/posts/the-workspace-is-the-benchmark/}
+}
+```
