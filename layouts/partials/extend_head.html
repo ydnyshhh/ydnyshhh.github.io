@@ -10,3 +10,8 @@
   });">
 </script>
 {{ end }}
+
+{{ if .Params.swg }}
+{{ $swgStyle := resources.Get "css/swg-post.css" | minify | fingerprint }}
+<link rel="stylesheet" href="{{ $swgStyle.RelPermalink }}" integrity="{{ $swgStyle.Data.Integrity }}">
+{{ end }}
