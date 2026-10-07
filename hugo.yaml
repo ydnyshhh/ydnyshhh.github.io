@@ -17,7 +17,8 @@ params:
   ShowBreadCrumbs: true
   homeInfoParams:
     Title: Hi There 👋🏻
-    Content: I'm Yadnyesh, a student researcher. My research interests include reinforcement learning, reasoning and planning in robotics, flow and diffusion models, discovery-driven AI systems and foundational large language models. I am particularly focused on building interpretable, efficient, and scalable AI systems that drive scientific discovery and create real-world impact.
+    Content: >-
+      I’m Yadnyesh, a ML researcher working on reinforcement learning, agentic systems and post-training. I’m particularly interested in how we build and evaluate increasingly capable agents: the environments they learn in, the feedback and supervision they receive, the failures that emerge over long horizons and the systems needed to study them reliably. My broader interests include continual learning, AI for science and recursive self-improvement.
   
   socialIcons:
     - name: x
