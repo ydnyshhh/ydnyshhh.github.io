@@ -53,3 +53,8 @@ Here's my collection of favorite readings:
 43. Journey to the End of Reason: The life of Kurt Godel - Stephen Budiansky
 44. Letters of Vincent Van Gogh - Van Gogh
 45. Glass Bead Game - Hermann Hesse
+46. A Natural History of Human Morality - Michael Tomasello
+47. Thus Spoke Zarathustra - Friedrich Nietzsche
+48. Science of Logic - Hegel
+49. Active Inference: The Free Energy Principle in Mind, Brain, and Behavior - Thomas Parr, Giovanni Pezzulo and Karl J. Friston
+50. Bayesian Models of Cognition: Reverse Engineering the Mind - Thomas L. Griffiths, Nick Chater, Joshua B. Tenenbaum
